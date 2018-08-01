@@ -135,6 +135,7 @@ function SelectDir()
   if(MouseY < ImageUpY && bDragged == false){
     CurDirection = Direction.UP;
     bDragged = true;
+		;;;;
   }
   //하
   else if(MouseY > ImageDownY && bDragged == false){
