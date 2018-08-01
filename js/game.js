@@ -15,7 +15,7 @@ var Tile;
 var TileX = 7;
 var TileArray = [];
 var bPressed = false;
-var MouseX, MouseY;
+var MouseX, MouseY;;;;
 var SelectIndex = 0;
 var bDragged = false;
 var MovePoint = 100;

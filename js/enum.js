@@ -11,4 +11,5 @@ var BackGroundPos = {
   BACKGROUND_TOPY : 0,
   BACKGROUND_BOARDX : 0,
   BACKGROUND_BOARDY : 470
-};
+};;;;
+;;
