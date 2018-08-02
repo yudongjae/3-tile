@@ -1,10 +1,18 @@
 'use strict';
 
+//Stage 기능을 알리기 위해서 일부러 놔둔 클래스 CBoot;
 function CBoot(){};
+CBoot.prototype =
+{
+	create : function() {
+		game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+	}
+}
 
 function global_preload()
 {
 	game.state.add('boot', CBoot);
+
 }
 
 function start_from_here()
