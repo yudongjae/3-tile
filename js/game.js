@@ -21,7 +21,12 @@ function CMain()
 	this.Tile;
 	this.TileArray = [];
 	this.TileNumber = 1;
+	this.TileIDNumber = 1;
 	this.FirstTileY = 395;
+	this.SelectTile;
+	this.SelectTileStartPos = {x : 0, y : 0};
+	this.BoundRect;
+	this.bDragFinish = false;
 };
 CMain.prototype =
 {
@@ -34,6 +39,8 @@ CMain.prototype =
 		game.load.image(gameRes.block_03.key, gameRes.block_03.fileName);
 		game.load.image(gameRes.block_04.key, gameRes.block_04.fileName);
 		game.load.image(gameRes.block_05.key, gameRes.block_05.fileName);
+		this.BoundRect = new Phaser.Rectangle(0, game.width / 1.8, 720, 802);
+
 		console.log(game.width);
 		console.log(game.height);
 	},
@@ -48,6 +55,10 @@ CMain.prototype =
 			this.TileMaker(this.TileArray, this.Tile, this.FirstTileY);
 			this.FirstTileY += 100;
 		}
+		//this.Tile.onChildInputDown.add(this.onDown, this);
+		//var graphics = game.add.graphics(this.BoundRect.x, this.BoundRect.y);
+		//graphics.beginFill(0x000077);
+		//graphics.drawRect(0,0, this.BoundRect.width, this.BoundRect.height);
 	},
 
 	TileMaker : function()
@@ -55,13 +66,52 @@ CMain.prototype =
 		for(var i = 0; i < BoardInfo.BOARD_COLS; ++i){
 			this.TileNumber = getRandom(1, 5);
 			var Tile = this.Tile.create(i * 100, this.FirstTileY, 'block_0' + this.TileNumber);
+			Tile.anchor.setTo(0, 0);
 			this.TileNumber += 1;
 			if(this.TileNumber >= 6){
 				this.TileNumber = 1;
 			}
-			Tile.inputEnabled = true;
-			Tile.input.enableDrag();
+			Tile.Id = 'Tile' + this.TileIDNumber;
+			this.TileIDNumber += 1;
+			Add_DraggingAndBound(Tile);
+			Tile.events.onDragStart.add(this.Test, this);
+			Tile.events.onDragStop.add(this.SwapTile, this);
+			Tile.input.boundsRect = this.BoundRect;
+			this.TileArray.push(Tile);
 		}
+	},
+
+	SwapTile : function(Tile)
+	{
+		Tile.position = this.SelectTileStartPos;
+		console.log('Stop Drag');
+		this.bDragFinish = false;
+		console.log(this.TileArray[0].position);
+	},
+
+	Test : function(Tile)
+	{
+		if(!this.bDragFinish){
+		console.log('Tile.position.x : ' + Tile.position.x, 'Tile.position.y : ' + Tile.position.y);
+		this.SelectTile = Tile;
+		this.SelectTileStartPos.x = this.SelectTile.position.x;
+		this.SelectTileStartPos.y = this.SelectTile.position.y;
+		console.log('this.SelectTileStartPos.x : ' + this.SelectTileStartPos.x,
+	'this.SelectTileStartPos.y : ' + this.SelectTileStartPos.y);
+		this.bDragFinish = true;
+		}
+		console.log(this.TileArray[0].position);
+	},
+
+	onDown : function(sprite, pointer){
+		console.log(sprite.Id);
+	},
+
+	update : function(){
+	},
+
+	render : function(){
+		game.debug.inputInfo(50, 50);
 	}
 };
 
