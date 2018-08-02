@@ -1,10 +1,12 @@
 //실수를 에러로 변환
 'use strict';
 var game;
+var GameMain;
 var GameOption =
 {
 	ScreenWidth : 720,
-	ScreenHeight : 1280
+	ScreenHeight : 1280,
+	BackgroundColor : 0x222222
 }
 
 var Direction = {
@@ -20,4 +22,9 @@ var BackGroundPos = {
   BACKGROUND_TOPY : 0,
   BACKGROUND_BOARDX : 0,
   BACKGROUND_BOARDY : 470
+};
+
+var BoardInfo = {
+	BOARD_COLS : 7,
+	BOARD_ROWS : 7
 };

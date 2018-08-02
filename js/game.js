@@ -6,20 +6,79 @@ CBoot.prototype =
 {
 	create : function() {
 		game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+		game.scale.pageAlignHorizontally = true;
+		game.scale.pageAlignVertically = true;
+		game.stage.backgroundColor = GameOption.BackgroundColor;
+		console.log("CBoot.create() : finish");
+		game.state.start('Main');
 	}
-}
+};
+
+function CMain()
+{
+	GameMain = this;
+	this.MouseCursors = game.input.acitve;
+	this.Tile;
+	this.TileArray = [];
+	this.TileNumber = 1;
+	this.FirstTileY = 395;
+};
+CMain.prototype =
+{
+	preload : function()
+	{
+		game.load.image(gameRes.MnbgTop.key, gameRes.MnbgTop.fileName);
+		game.load.image(gameRes.MnbgBoard.key, gameRes.MnbgBoard.fileName);
+		game.load.image(gameRes.block_01.key, gameRes.block_01.fileName);
+		game.load.image(gameRes.block_02.key, gameRes.block_02.fileName);
+		game.load.image(gameRes.block_03.key, gameRes.block_03.fileName);
+		game.load.image(gameRes.block_04.key, gameRes.block_04.fileName);
+		game.load.image(gameRes.block_05.key, gameRes.block_05.fileName);
+		console.log(game.width);
+		console.log(game.height);
+	},
+
+	create : function()
+	{
+		gameRes.MnbgTop.spr = game.add.image(gameRes.MnbgTop.x, gameRes.MnbgTop.y, gameRes.MnbgTop.key);
+		gameRes.MnbgBoard.y = game.width / 1.8;
+		gameRes.MnbgBoard.spr = game.add.image(gameRes.MnbgBoard.x, gameRes.MnbgBoard.y, gameRes.MnbgBoard.key);
+		this.Tile = game.add.group();
+		for(var i = 0; i < 7; ++i){
+			this.TileMaker(this.TileArray, this.Tile, this.FirstTileY);
+			this.FirstTileY += 100;
+		}
+	},
+
+	TileMaker : function()
+	{
+		for(var i = 0; i < BoardInfo.BOARD_COLS; ++i){
+			this.TileNumber = getRandom(1, 5);
+			var Tile = this.Tile.create(i * 100, this.FirstTileY, 'block_0' + this.TileNumber);
+			this.TileNumber += 1;
+			if(this.TileNumber >= 6){
+				this.TileNumber = 1;
+			}
+			Tile.inputEnabled = true;
+			Tile.input.enableDrag();
+		}
+	}
+};
 
 function global_preload()
 {
 	game.state.add('boot', CBoot);
-
-}
+	console.log('State.add CBoot');
+	game.state.add('Main', CMain);
+	console.log('State.add CMain');
+	game.state.start('boot');
+};
 
 function start_from_here()
 {
 	game = new Phaser.Game(GameOption.ScreenWidth, GameOption.ScreenHeight,
 	Phaser.CANVAS, null, {preload : global_preload});
-}
+};
 
 start_from_here();
 //-----------------------------------고치기 전-----------------------------------------
