@@ -78,7 +78,7 @@ CMain.prototype =
 			this.TileIDNumber += 1;
 			Add_DraggingAndBound(Tile);
 			Tile.events.onDragStart.add(this.Test, this);
-			Tile.events.onDragUpdate.add(this.CheckOverlap, this);
+			Tile.events.onDragUpdate.add(this.Dragging, this);
 			Tile.events.onDragStop.add(this.SwapTile, this);
 			//Tile.input.enableSnap(50, 100, true, true);
 			Tile.input.boundsRect = this.BoundRect;
@@ -100,11 +100,13 @@ CMain.prototype =
 			if(this.bNoSwap){
 				this.SelectTile.position.x = this.SelectTileStartPos.x;
 				this.SelectTile.position.y = this.SelectTileStartPos.y;
+				this.SelectTile.alpha = 1;
 				this.SelectTile = null;
 				this.SwapedTile = null;
 				this.bNoSwap = false;
 				this.bSwapFinish = false;
-				this.bDragFinish = false;
+				this.bDragFinish = true;
+				this.OverlapTileCount = 0;
 			}
 			else{
 				if(this.bSwapFinish){
@@ -115,19 +117,18 @@ CMain.prototype =
 					this.SwapedTile.position.y = this.SelectTileStartPos.y;
 					this.SelectTile.position.x = TempPosX;
 					this.SelectTile.position.y = TempPosY;
+					this.SelectTile.alpha = 1;
 					this.SelectTile = null;
 					this.bSwapFinish = false;
 					this.bDragFinish = true;
 					this.SwapedTile = null;
+					this.OverlapTileCount = 0;
 					console.log('SwapedTile : ' + this.SwapedTile);
 					console.log('SelectTile : ' + this.SelectTile);
 					console.log('SelectTileStartPos : ' + this.getSelectTileStartPos());
 				}
 				this.bDragFinish = true;
 			}
-			this.SwapedTile = null;
-			this.SelectTile = null;
-			console.log('Stop Drag');
 		}
 	},
 //함수 명 변경 될 수 있음./
@@ -136,12 +137,10 @@ CMain.prototype =
 			console.log('호출!!!!');
 		//if(game.input.activePointer.leftButton.isDown){
 			console.log('Tile.position.x : ' + Tile.position.x, 'Tile.position.y : ' + Tile.position.y);
-
-
 		//}
 	},
 
-	CheckOverlap : function(Tile){
+	Dragging : function(Tile){
 		if(game.input.activePointer.leftButton.isDown){
 			if(this.bDragFinish){
 				this.SelectTile = Tile;
@@ -152,6 +151,7 @@ CMain.prototype =
 				this.SelectTileStartPos.y = SelectTileStartPosY;
 				console.log(this.SelectTileStartPos.x, this.SelectTileStartPos.y);
 				console.log(this.SelectTile);
+				this.SelectTile.alpha = 0.5;
 				this.bDragFinish = false;
 			}
 		}
@@ -163,12 +163,10 @@ CMain.prototype =
 		OverlapTileArray.push(Tile);
 		if(1 < this.OverlapTileCount){
 			this.bNoSwap = true;
-			this.OverlapTileCount = 0;
 		}
 		else{
 			this.SwapedTile = OverlapTileArray[0];
 			this.bSwapFinish = true;
-			this.OverlapTileCount = 0;
 			//this.bDragFinish = true;
 			for(var i = 0; i < OverlapTileArray.length; ++i){
 				console.log(OverlapTileArray);
@@ -189,12 +187,14 @@ CMain.prototype =
 		// if(this.SwapedTile != null)
 		// 	console.log(this.SwapedTile.position);
 		//console.log(this.TileArray[0].position);
+		if(this.SelectTile != null)
+			console.log(this.SelectTile.position);
 	},
 
 	render : function(Tile){
 		game.debug.inputInfo(50, 50);
-		for(var i = 0; i < this.TileArray.length; ++i)
-			game.debug.body(this.TileArray[i]);
+		// for(var i = 0; i < this.TileArray.length; ++i)
+		// 	game.debug.body(this.TileArray[i]);
 	},
 
 	getSelectTileStartPos : function(){
