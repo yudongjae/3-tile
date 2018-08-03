@@ -9,6 +9,7 @@ CBoot.prototype =
 		game.scale.pageAlignHorizontally = true;
 		game.scale.pageAlignVertically = true;
 		game.stage.backgroundColor = GameOption.BackgroundColor;
+		game.physics.startSystem(Phaser.Physics.ARCADE);
 		console.log("CBoot.create() : finish");
 		game.state.start('Main');
 	}
@@ -22,11 +23,15 @@ function CMain()
 	this.TileArray = [];
 	this.TileNumber = 1;
 	this.TileIDNumber = 1;
-	this.FirstTileY = 395;
+	this.FirstTileY = 460;
 	this.SelectTile;
 	this.SelectTileStartPos = {x : 0, y : 0};
 	this.BoundRect;
-	this.bDragFinish = false;
+	this.bDragFinish = true;
+	this.bNoSwap = false;
+	this.SwapedTile;
+	this.OverlapTileCount = 0;
+	this.bSwapFinish = false;
 };
 CMain.prototype =
 {
@@ -51,14 +56,12 @@ CMain.prototype =
 		gameRes.MnbgBoard.y = game.width / 1.8;
 		gameRes.MnbgBoard.spr = game.add.image(gameRes.MnbgBoard.x, gameRes.MnbgBoard.y, gameRes.MnbgBoard.key);
 		this.Tile = game.add.group();
+		game.physics.startSystem(Phaser.Physics.ARCADE);
+		//this.Tile.onChildInputOver.add(this.onOver, this);
 		for(var i = 0; i < 7; ++i){
-			this.TileMaker(this.TileArray, this.Tile, this.FirstTileY);
+			this.TileMaker();
 			this.FirstTileY += 100;
 		}
-		//this.Tile.onChildInputDown.add(this.onDown, this);
-		//var graphics = game.add.graphics(this.BoundRect.x, this.BoundRect.y);
-		//graphics.beginFill(0x000077);
-		//graphics.drawRect(0,0, this.BoundRect.width, this.BoundRect.height);
 	},
 
 	TileMaker : function()
@@ -66,7 +69,7 @@ CMain.prototype =
 		for(var i = 0; i < BoardInfo.BOARD_COLS; ++i){
 			this.TileNumber = getRandom(1, 5);
 			var Tile = this.Tile.create(i * 100, this.FirstTileY, 'block_0' + this.TileNumber);
-			Tile.anchor.setTo(0, 0);
+			Tile.anchor.setTo(0, 0.5);
 			this.TileNumber += 1;
 			if(this.TileNumber >= 6){
 				this.TileNumber = 1;
@@ -75,43 +78,127 @@ CMain.prototype =
 			this.TileIDNumber += 1;
 			Add_DraggingAndBound(Tile);
 			Tile.events.onDragStart.add(this.Test, this);
+			Tile.events.onDragUpdate.add(this.CheckOverlap, this);
 			Tile.events.onDragStop.add(this.SwapTile, this);
+			//Tile.input.enableSnap(50, 100, true, true);
 			Tile.input.boundsRect = this.BoundRect;
+			game.physics.arcade.enable(Tile);
+			Tile.body.collideWorldBounds = true;
+			Tile.body.setSize(80, 80, 20, 30);
+			//game.physics.arcade.enable(Tile);
 			this.TileArray.push(Tile);
 		}
 	},
-
-	SwapTile : function(Tile)
+//함수 명 변경 될 수 있음.
+	SwapTile : function(Tile, pointer)
 	{
-		Tile.position = this.SelectTileStartPos;
-		console.log('Stop Drag');
-		this.bDragFinish = false;
-		console.log(this.TileArray[0].position);
+		//Tile.position = this.SelectTileStartPos;
+		 if(game.input.activePointer.leftButton.isUp){
+		 	for(var i = 0; i < this.TileArray.length; ++i){
+		 		game.physics.arcade.overlap(this.SelectTile, this.TileArray[i], this.overlapHandler, null, this);
+		 	}
+			if(this.bNoSwap){
+				this.SelectTile.position.x = this.SelectTileStartPos.x;
+				this.SelectTile.position.y = this.SelectTileStartPos.y;
+				this.SelectTile = null;
+				this.SwapedTile = null;
+				this.bNoSwap = false;
+				this.bSwapFinish = false;
+				this.bDragFinish = false;
+			}
+			else{
+				if(this.bSwapFinish){
+					var TempPosX = this.SwapedTile.position.x;
+					var TempPosY = this.SwapedTile.position.y;
+
+					this.SwapedTile.position.x = this.SelectTileStartPos.x;
+					this.SwapedTile.position.y = this.SelectTileStartPos.y;
+					this.SelectTile.position.x = TempPosX;
+					this.SelectTile.position.y = TempPosY;
+					this.SelectTile = null;
+					this.bSwapFinish = false;
+					this.bDragFinish = true;
+					this.SwapedTile = null;
+					console.log('SwapedTile : ' + this.SwapedTile);
+					console.log('SelectTile : ' + this.SelectTile);
+					console.log('SelectTileStartPos : ' + this.getSelectTileStartPos());
+				}
+				this.bDragFinish = true;
+			}
+			this.SwapedTile = null;
+			this.SelectTile = null;
+			console.log('Stop Drag');
+		}
+	},
+//함수 명 변경 될 수 있음./
+	Test : function(Tile, pointer)
+	{
+			console.log('호출!!!!');
+		//if(game.input.activePointer.leftButton.isDown){
+			console.log('Tile.position.x : ' + Tile.position.x, 'Tile.position.y : ' + Tile.position.y);
+
+
+		//}
 	},
 
-	Test : function(Tile)
-	{
-		if(!this.bDragFinish){
-		console.log('Tile.position.x : ' + Tile.position.x, 'Tile.position.y : ' + Tile.position.y);
-		this.SelectTile = Tile;
-		this.SelectTileStartPos.x = this.SelectTile.position.x;
-		this.SelectTileStartPos.y = this.SelectTile.position.y;
-		console.log('this.SelectTileStartPos.x : ' + this.SelectTileStartPos.x,
-	'this.SelectTileStartPos.y : ' + this.SelectTileStartPos.y);
-		this.bDragFinish = true;
+	CheckOverlap : function(Tile){
+		if(game.input.activePointer.leftButton.isDown){
+			if(this.bDragFinish){
+				this.SelectTile = Tile;
+				var SelectTileStartPosX = this.SelectTile.position.x;
+				var SelectTileStartPosY = this.SelectTile.position.y;
+				console.log(SelectTileStartPosX, SelectTileStartPosY);
+				this.SelectTileStartPos.x = SelectTileStartPosX;
+				this.SelectTileStartPos.y = SelectTileStartPosY;
+				console.log(this.SelectTileStartPos.x, this.SelectTileStartPos.y);
+				console.log(this.SelectTile);
+				this.bDragFinish = false;
+			}
 		}
-		console.log(this.TileArray[0].position);
+	},
+
+	overlapHandler(SelectTile, Tile){
+		this.OverlapTileCount++;
+		var OverlapTileArray =[];
+		OverlapTileArray.push(Tile);
+		if(1 < this.OverlapTileCount){
+			this.bNoSwap = true;
+			this.OverlapTileCount = 0;
+		}
+		else{
+			this.SwapedTile = OverlapTileArray[0];
+			this.bSwapFinish = true;
+			this.OverlapTileCount = 0;
+			//this.bDragFinish = true;
+			for(var i = 0; i < OverlapTileArray.length; ++i){
+				console.log(OverlapTileArray);
+			}
+		}
 	},
 
 	onDown : function(sprite, pointer){
 		console.log(sprite.Id);
 	},
 
-	update : function(){
+	onOver : function(Tile){
+		console.log('OnOver : ' + Tile.Id);
 	},
 
-	render : function(){
+	update : function(){
+		//console.log(this.getSelectTileStartPos());
+		// if(this.SwapedTile != null)
+		// 	console.log(this.SwapedTile.position);
+		//console.log(this.TileArray[0].position);
+	},
+
+	render : function(Tile){
 		game.debug.inputInfo(50, 50);
+		for(var i = 0; i < this.TileArray.length; ++i)
+			game.debug.body(this.TileArray[i]);
+	},
+
+	getSelectTileStartPos : function(){
+		return this.SelectTileStartPos;
 	}
 };
 

@@ -2,6 +2,7 @@ function Add_DraggingAndBound(_obj)
 {
 	_obj.inputEnabled = true;
 	_obj.input.enableDrag(false, true);
+	
 	//_obj.input.boundsRect = BoundRect;
 }
 
