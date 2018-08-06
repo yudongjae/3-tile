@@ -133,9 +133,12 @@ CMain.prototype =
 	},
 	//스왑이 된 경우
 	CompleteSwap : function(){
+
 		this.SelectTile.x = this.SelectTileStartPos.x;
 		this.SelectTile.y = this.SelectTileStartPos.y;
 		this.TweenStart();
+		//TileMatch 검사 부분.
+		//this.bMatch = false;
 
 		// if(this.SelectTile !== null && this.SwapedTile !== null){
 		// 	//if(match가 됬을 경우)
