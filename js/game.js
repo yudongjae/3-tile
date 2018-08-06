@@ -26,12 +26,22 @@ function CMain()
 	this.FirstTileY = 460;
 	this.SelectTile;
 	this.SelectTileStartPos = {x : 0, y : 0};
+	this.SwapedTileStartPos = {x : 0, y : 0};
 	this.BoundRect;
 	this.bDragFinish = true;
 	this.bNoSwap = false;
 	this.SwapedTile;
 	this.OverlapTileCount = 0;
 	this.bSwapFinish = false;
+	this.MoveTile = false;
+	this.CurDirection = Direction.END;
+	this.SelectTileTween = null;
+	this.SwapedTileTween = null;
+	this.ReChangeTweenA = null;
+	this.ReChangeTweenB = null;
+	this.bOnceClick = false;
+	//match가 됐는지 판별
+	this.bMatch = false;
 };
 CMain.prototype =
 {
@@ -62,6 +72,7 @@ CMain.prototype =
 			this.TileMaker();
 			this.FirstTileY += 100;
 		}
+		this.DuplicateCheck();
 	},
 
 	TileMaker : function()
@@ -77,15 +88,13 @@ CMain.prototype =
 			Tile.Id = 'Tile' + this.TileIDNumber;
 			this.TileIDNumber += 1;
 			Add_DraggingAndBound(Tile);
-			Tile.events.onDragStart.add(this.Test, this);
+			Tile.events.onDragStart.add(this.PickTile, this);
 			Tile.events.onDragUpdate.add(this.Dragging, this);
 			Tile.events.onDragStop.add(this.SwapTile, this);
-			//Tile.input.enableSnap(50, 100, true, true);
 			Tile.input.boundsRect = this.BoundRect;
 			game.physics.arcade.enable(Tile);
 			Tile.body.collideWorldBounds = true;
 			Tile.body.setSize(80, 80, 20, 30);
-			//game.physics.arcade.enable(Tile);
 			this.TileArray.push(Tile);
 		}
 	},
@@ -97,42 +106,71 @@ CMain.prototype =
 		 	for(var i = 0; i < this.TileArray.length; ++i){
 		 		game.physics.arcade.overlap(this.SelectTile, this.TileArray[i], this.overlapHandler, null, this);
 		 	}
-			if(this.bNoSwap){
-				this.SelectTile.position.x = this.SelectTileStartPos.x;
-				this.SelectTile.position.y = this.SelectTileStartPos.y;
-				this.SelectTile.alpha = 1;
-				this.SelectTile = null;
-				this.SwapedTile = null;
-				this.bNoSwap = false;
-				this.bSwapFinish = false;
-				this.bDragFinish = true;
-				this.OverlapTileCount = 0;
-			}
-			else{
+			if(this.SwapedTile !== null){
 				if(this.bSwapFinish){
-					var TempPosX = this.SwapedTile.position.x;
-					var TempPosY = this.SwapedTile.position.y;
-
-					this.SwapedTile.position.x = this.SelectTileStartPos.x;
-					this.SwapedTile.position.y = this.SelectTileStartPos.y;
-					this.SelectTile.position.x = TempPosX;
-					this.SelectTile.position.y = TempPosY;
-					this.SelectTile.alpha = 1;
-					this.SelectTile = null;
-					this.bSwapFinish = false;
-					this.bDragFinish = true;
-					this.SwapedTile = null;
-					this.OverlapTileCount = 0;
-					console.log('SwapedTile : ' + this.SwapedTile);
-					console.log('SelectTile : ' + this.SelectTile);
-					console.log('SelectTileStartPos : ' + this.getSelectTileStartPos());
-				}
-				this.bDragFinish = true;
+					this.CompleteSwap();
+					}
+			}
+			if(this.bOnceClick)
+			{
+				this.OnceClick();
+				this.bOnceClick = false;
 			}
 		}
 	},
+	//겹쳐서 스왑하려고 할 경우
+	DozenOverlap : function(){
+		this.SelectTile.x = this.SelectTileStartPos.x;
+		this.SelectTile.y = this.SelectTileStartPos.y;
+		this.SelectTile.alpha = 1;
+		this.SelectTile = null;
+		this.SwapedTile = null;
+		this.bNoSwap = false;
+		this.bSwapFinish = false;
+		this.bDragFinish = true;
+		this.MoveTile = false;
+		this.OverlapTileCount = 0;
+	},
+	//스왑이 된 경우
+	CompleteSwap : function(){
+		this.SelectTile.x = this.SelectTileStartPos.x;
+		this.SelectTile.y = this.SelectTileStartPos.y;
+		this.TweenStart();
+
+		// if(this.SelectTile !== null && this.SwapedTile !== null){
+		// 	//if(match가 됬을 경우)
+		// 	//else(match가 되지 않았을 경우)
+		//
+		// }
+		// var TempPosX = this.SwapedTile.position.x;
+		// var TempPosY = this.SwapedTile.position.y;
+		//
+		// this.SwapedTile.x = this.SelectTileStartPos.x;
+		// this.SwapedTile.y = this.SelectTileStartPos.y;
+		//this.SelectTile.x = TempPosX;
+		//this.SelectTile.y = TempPosY;
+
+		this.SelectTile.alpha = 1;
+		//this.SelectTile = null;
+		this.bSwapFinish = false;
+		this.bDragFinish = true;
+		this.MoveTile = false;
+		//this.SwapedTile = null;
+		this.OverlapTileCount = 0;
+		console.log('SwapedTile : ' + this.SwapedTile);
+		console.log('SelectTile : ' + this.SelectTile);
+		console.log('SelectTileStartPos : ' + this.getSelectTileStartPos());
+	},
+	//제자리 클릭할 경우
+	OnceClick : function(){
+		this.SelectTile.alpha = 1;
+		this.SelectTile.x = this.SelectTileStartPos.x;
+		this.SelectTile.y = this.SelectTileStartPos.y;
+		this.SelectTile = null;
+		this.bDragFinish = true;
+	},
 //함수 명 변경 될 수 있음./
-	Test : function(Tile, pointer)
+	PickTile : function(Tile, pointer)
 	{
 			console.log('호출!!!!');
 		//if(game.input.activePointer.leftButton.isDown){
@@ -154,24 +192,309 @@ CMain.prototype =
 				this.SelectTile.alpha = 0.5;
 				this.bDragFinish = false;
 			}
-		}
-	},
+
+			if(this.SelectTile.x <= this.SelectTileStartPos.x - MoveDistance){
+				this.SelectTile.x = this.SelectTileStartPos.x - 100;
+				this.SelectTile.y = this.SelectTileStartPos.y;
+				this.CurDirection = Direction.LEFT;
+				this.MoveTile = true;
+				this.bOnceClick = false;
+			}
+			else if(this.SelectTile.x >= this.SelectTileStartPos.x + MoveDistance){
+				this.SelectTile.x = this.SelectTileStartPos.x + 100;
+				this.SelectTile.y = this.SelectTileStartPos.y;
+				this.CurDirection = Direction.RIGHT;
+				this.MoveTile = true;
+				this.bOnceClick = false;
+			}
+			else if(this.SelectTile.y <= this.SelectTileStartPos.y - MoveDistance){
+				this.SelectTile.x = this.SelectTileStartPos.x;
+				this.SelectTile.y = this.SelectTileStartPos.y - 100;
+				this.CurDirection = Direction.UP;
+				this.MoveTile = true;
+				this.bOnceClick = false;
+			}
+			else if(this.SelectTile.y >= this.SelectTileStartPos.y + MoveDistance){
+				this.SelectTile.x = this.SelectTileStartPos.x;
+				this.SelectTile.y = this.SelectTileStartPos.y + 100;
+				this.CurDirection = Direction.DOWN;
+				this.MoveTile = true;
+				this.bOnceClick = false;
+			}
+			else if(Math.abs(this.SelectTile.x - this.SelectTileStartPos.x) <= 40){
+				if(this.SwapedTile !== null)
+					this.SwapedTile = null;
+				this.SelectTile.x = this.SelectTileStartPos.x;
+				this.SelectTile.y = this.SelectTileStartPos.y;
+				this.CurDirection = Direction.END;
+				this.bOnceClick = true;
+				this.MoveTile = false;
+			}
+			else if(Math.abs(this.SelectTile.y - this.SelectTileStartPos.y) <= 40){
+				if(this.SwapedTile !== null)
+					this.SwapedTile = null;
+				this.SelectTile.x = this.SelectTileStartPos.x;
+				this.SelectTile.y = this.SelectTileStartPos.y;
+				this.CurDirection = Direction.END;
+				this.bOnceClick = true;
+				this.MoveTile = false;
+			}
+
+			if(this.CurDirection === Direction.END)
+				this.bOnceClick = true;
+			}
+		},
 
 	overlapHandler(SelectTile, Tile){
 		this.OverlapTileCount++;
 		var OverlapTileArray =[];
 		OverlapTileArray.push(Tile);
-		if(1 < this.OverlapTileCount){
-			this.bNoSwap = true;
+		// if(1 < this.OverlapTileCount){
+		// 	this.bNoSwap = true;
+		// }
+		this.SwapedTile = OverlapTileArray[OverlapTileArray.length - 1];
+		this.bSwapFinish = true;
+		//this.bDragFinish = true;
+		for(var i = 0; i < OverlapTileArray.length; ++i){
+			console.log(OverlapTileArray);
+
 		}
-		else{
-			this.SwapedTile = OverlapTileArray[0];
-			this.bSwapFinish = true;
-			//this.bDragFinish = true;
-			for(var i = 0; i < OverlapTileArray.length; ++i){
-				console.log(OverlapTileArray);
+	},
+
+	// MatchTileCheck : function(){
+	//
+	// },
+
+	DuplicateCheck : function(Tile){
+		var KillTilePosx = 0;
+		var KillTilePosy = 0;
+		var Tile;
+
+		for(var i = 0; i < this.TileArray.length - 2; ++i)
+		{
+			//처음 생성시 x축 중복 제거
+			if(this.TileArray[i].x !== 600)
+			{
+				if(this.TileArray[i].key === 'block_01')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 2].key)
+					{
+						KillTilePosx = this.TileArray[i + 2].x;
+						KillTilePosy = this.TileArray[i + 2].y;
+						this.TileArray[i + 2].kill();
+						this.TileArray[i + 2] = null;
+						if(this.TileArray[i + 2] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_02');
+							this.TileArray[i + 2] = Tile;
+						}
+					}
+				}
+				else if(this.TileArray[i].key === 'block_02')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 2].key)
+					{
+						KillTilePosx = this.TileArray[i + 2].x;
+						KillTilePosy = this.TileArray[i + 2].y;
+						this.TileArray[i + 2].kill();
+						this.TileArray[i + 2] = null;
+						if(this.TileArray[i + 2] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_03');
+							this.TileArray[i + 2] = Tile
+						}
+					}
+				}
+				else if(this.TileArray[i].key === 'block_03')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 2].key)
+					{
+						KillTilePosx = this.TileArray[i + 2].x;
+						KillTilePosy = this.TileArray[i + 2].y;
+						this.TileArray[i + 2].kill();
+						this.TileArray[i + 2] = null;
+						if(this.TileArray[i + 2] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_04');
+							this.TileArray[i + 2] = Tile;
+						}
+					}
+				}
+				else if(this.TileArray[i].key === 'block_04')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 2].key)
+					{
+						KillTilePosx = this.TileArray[i + 2].x;
+						KillTilePosy = this.TileArray[i + 2].y;
+						this.TileArray[i + 2].kill();
+						this.TileArray[i + 2] = null;
+						if(this.TileArray[i + 2] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_05');
+							this.TileArray[i + 2] = Tile;
+						}
+					}
+				}
+				else if(this.TileArray[i].key === 'block_05')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 2].key)
+					{
+						KillTilePosx = this.TileArray[i + 2].x;
+						KillTilePosy = this.TileArray[i + 2].y;
+						this.TileArray[i + 2].kill();
+						this.TileArray[i + 2] = null;
+						if(this.TileArray[i + 2] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_01');
+							this.TileArray[i + 2] = Tile;
+						}
+					}
+				}
+			}
+			//처음 생성시 y축 중복 제거
+			if(this.TileArray[i].y !== 1060)
+			{
+				if(this.TileArray[i].key === 'block_01')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 7].key)
+					{
+						KillTilePosx = this.TileArray[i + 7].x;
+						KillTilePosy = this.TileArray[i + 7].y;
+						this.TileArray[i + 7].kill();
+						this.TileArray[i + 7] = null;
+						if(this.TileArray[i + 7] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_02');
+							this.TileArray[i + 7] = Tile;
+						}
+					}
+				}
+				else if(this.TileArray[i].key === 'block_02')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 7].key)
+					{
+						KillTilePosx = this.TileArray[i + 7].x;
+						KillTilePosy = this.TileArray[i + 7].y;
+						this.TileArray[i + 7].kill();
+						this.TileArray[i + 7] = null;
+						if(this.TileArray[i + 7] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_03');
+							this.TileArray[i + 7] = Tile;
+						}
+					}
+				}
+				else if(this.TileArray[i].key === 'block_03')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 7].key)
+					{
+						KillTilePosx = this.TileArray[i + 7].x;
+						KillTilePosy = this.TileArray[i + 7].y;
+						this.TileArray[i + 7].kill();
+						this.TileArray[i + 7] = null;
+						if(this.TileArray[i + 7] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_04');
+							this.TileArray[i + 7] = Tile;
+						}
+					}
+				}
+				else if(this.TileArray[i].key === 'block_04')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 7].key)
+					{
+						KillTilePosx = this.TileArray[i + 7].x;
+						KillTilePosy = this.TileArray[i + 7].y;
+						this.TileArray[i + 7].kill();
+						this.TileArray[i + 7] = null;
+						if(this.TileArray[i + 7] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_05');
+							this.TileArray[i + 7] = Tile;
+						}
+					}
+				}
+				else if(this.TileArray[i].key === 'block_05')
+				{
+					if(this.TileArray[i].key === this.TileArray[i + 7].key)
+					{
+						KillTilePosx = this.TileArray[i + 7].x;
+						KillTilePosy = this.TileArray[i + 7].y;
+						this.TileArray[i + 7].kill();
+						this.TileArray[i + 7] = null;
+						if(this.TileArray[i + 7] === null)
+						{
+							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_01');
+							this.TileArray[i + 7] = Tile;
+						}
+					}
+				}
 			}
 		}
+	},
+
+	TileMakeFeature : function(Tile, x, y, Key){
+		Tile = this.Tile.create(x, y, Key);
+		Tile.anchor.setTo(0, 0.5);
+		Add_DraggingAndBound(Tile);
+		Tile.events.onDragStart.add(this.PickTile, this);
+		Tile.events.onDragUpdate.add(this.Dragging, this);
+		Tile.events.onDragStop.add(this.SwapTile, this);
+		Tile.input.boundsRect = this.BoundRect;
+		game.physics.arcade.enable(Tile);
+		Tile.body.collideWorldBounds = true;
+		Tile.body.setSize(80, 80, 20, 30);
+		return Tile;
+	},
+
+	TweenStart : function(){
+		this.SwapedTileStartPos.x = this.SwapedTile.x;
+		this.SwapedTileStartPos.y = this.SwapedTile.y;
+		if(this.CurDirection === Direction.UP || this.CurDirection === Direction.DOWN)
+		{
+			this.SelectTileTween = game.add.tween(this.SelectTile).to({y : this.SwapedTile.y}, TweenDuration, Phaser.Easing.Linear.None, true);
+			this.SwapedTileTween = game.add.tween(this.SwapedTile).to({y : this.SelectTileStartPos.y}, TweenDuration, Phaser.Easing.Linear.None, true);
+			this.SelectTileTween.onComplete.add(this.ReChangeTween, this);
+			this.SelectTileTween.start();
+			this.SwapedTileTween.start();
+		}
+		else
+		{
+			this.SelectTileTween = game.add.tween(this.SelectTile).to({ x : this.SwapedTile.x}, TweenDuration, Phaser.Easing.Linear.None, true);
+			this.SwapedTileTween = game.add.tween(this.SwapedTile).to({ x : this.SelectTileStartPos.x}, TweenDuration, Phaser.Easing.Linear.None, true);
+			this.SelectTileTween.onComplete.add(this.ReChangeTween, this);
+			this.SelectTileTween.start();
+			this.SwapedTileTween.start();
+		}
+	},
+
+	ReChangeTween : function(){
+		if(this.CurDirection === Direction.UP || this.CurDirection === Direction.DOWN){
+			if(this.bMatch === false){
+				this.ReChangeTweenA = game.add.tween(this.SelectTile).to({ y : this.SelectTileStartPos.y }, TweenDuration, Phaser.Easing.Linear.None, true);
+				this.ReChangeTweenB = game.add.tween(this.SwapedTile).to({ y : this.SwapedTileStartPos.y}, TweenDuration, Phaser.Easing.Linear.None, true);
+				this.ReChangeTweenA.start();
+				this.ReChangeTweenB.start();
+			}
+			this.CurDirection = Direction.END;
+			this.SelectTile = null;
+			this.SwapedTile = null;
+		}
+		else{
+			if(this.bMatch === false){
+				this.ReChangeTweenA = game.add.tween(this.SelectTile).to({ x : this.SelectTileStartPos.x }, TweenDuration, Phaser.Easing.Linear.None, true);
+				this.ReChangeTweenB  = game.add.tween(this.SwapedTile).to({ x : this.SwapedTileStartPos.x}, TweenDuration, Phaser.Easing.Linear.None, true);
+				this.ReChangeTweenA.start();
+				this.ReChangeTweenB.start();
+			}
+			this.CurDirection = Direction.END;
+			this.SelectTile = null;
+			this.SwapedTile = null;
+		}
+	},
+
+	getTile : function(posX, posY){
+		return this.Tile.iterate('Id', this.SelectTile.Id, Phaser.Group.RETURN_CHILD);
 	},
 
 	onDown : function(sprite, pointer){
@@ -187,8 +510,9 @@ CMain.prototype =
 		// if(this.SwapedTile != null)
 		// 	console.log(this.SwapedTile.position);
 		//console.log(this.TileArray[0].position);
-		if(this.SelectTile != null)
-			console.log(this.SelectTile.position);
+		//if(this.SelectTile != null)
+		//	console.log(this.SelectTile.position);
+
 	},
 
 	render : function(Tile){

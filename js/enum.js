@@ -28,3 +28,6 @@ var BoardInfo = {
 	BOARD_COLS : 7,
 	BOARD_ROWS : 7
 };
+
+var TweenDuration = 300;
+var MoveDistance = 40;
