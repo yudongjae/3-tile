@@ -21,8 +21,11 @@ function CMain()
 	this.MouseCursors = game.input.acitve;
 	this.Tile;
 	this.TileArray = [];
+	this.TilePosArray = [];
+	this.HorizentalArray = [];
+	this.VerticalArray = [];
 	this.TileNumber = 1;
-	this.TileIDNumber = 1;
+	this.TileIDNumber = 0;
 	this.FirstTileY = 460;
 	this.SelectTile;
 	this.SelectTileStartPos = {x : 0, y : 0};
@@ -42,6 +45,10 @@ function CMain()
 	this.bOnceClick = false;
 	//match가 됐는지 판별
 	this.bMatch = false;
+	//검사 시작
+	this.bMatchStart = false;
+	//MatchTileCheck
+	this.bMatchTileCheck = false;
 };
 CMain.prototype =
 {
@@ -81,11 +88,12 @@ CMain.prototype =
 			this.TileNumber = getRandom(1, 5);
 			var Tile = this.Tile.create(i * 100, this.FirstTileY, 'block_0' + this.TileNumber);
 			Tile.anchor.setTo(0, 0.5);
-			this.TileNumber += 1;
-			if(this.TileNumber >= 6){
-				this.TileNumber = 1;
-			}
-			Tile.Id = 'Tile' + this.TileIDNumber;
+			// this.TileNumber += 1;
+			// if(this.TileNumber >= 6){
+			// 	this.TileNumber = 1;
+			// }
+
+			Tile.Id = this.TileIDNumber;
 			this.TileIDNumber += 1;
 			Add_DraggingAndBound(Tile);
 			Tile.events.onDragStart.add(this.PickTile, this);
@@ -96,6 +104,7 @@ CMain.prototype =
 			Tile.body.collideWorldBounds = true;
 			Tile.body.setSize(80, 80, 20, 30);
 			this.TileArray.push(Tile);
+			this.TilePosArray.push(Tile);
 		}
 	},
 //함수 명 변경 될 수 있음.
@@ -138,25 +147,15 @@ CMain.prototype =
 		this.SelectTile.y = this.SelectTileStartPos.y;
 		this.TweenStart();
 		//TileMatch 검사 부분.
-		//this.bMatch = false;
 
-		// if(this.SelectTile !== null && this.SwapedTile !== null){
-		// 	//if(match가 됬을 경우)
-		// 	//else(match가 되지 않았을 경우)
-		//
-		// }
-		// var TempPosX = this.SwapedTile.position.x;
-		// var TempPosY = this.SwapedTile.position.y;
-		//
-		// this.SwapedTile.x = this.SelectTileStartPos.x;
-		// this.SwapedTile.y = this.SelectTileStartPos.y;
-		//this.SelectTile.x = TempPosX;
-		//this.SelectTile.y = TempPosY;
+
+		//var Tile = this.getTile(600, 1060);
+		//console.log(Tile.key);
 
 		this.SelectTile.alpha = 1;
 		//this.SelectTile = null;
 		this.bSwapFinish = false;
-		this.bDragFinish = true;
+
 		this.MoveTile = false;
 		//this.SwapedTile = null;
 		this.OverlapTileCount = 0;
@@ -177,7 +176,8 @@ CMain.prototype =
 	{
 			console.log('호출!!!!');
 		//if(game.input.activePointer.leftButton.isDown){
-			console.log('Tile.position.x : ' + Tile.position.x, 'Tile.position.y : ' + Tile.position.y);
+			//console.log('Tile.position.x : ' + Tile.position.x, 'Tile.position.y : ' + Tile.position.y);
+			console.log(this.TileArray);
 		//}
 	},
 
@@ -191,7 +191,7 @@ CMain.prototype =
 				this.SelectTileStartPos.x = SelectTileStartPosX;
 				this.SelectTileStartPos.y = SelectTileStartPosY;
 				console.log(this.SelectTileStartPos.x, this.SelectTileStartPos.y);
-				console.log(this.SelectTile);
+				console.log(this.SelectTile.Id);
 				this.SelectTile.alpha = 0.5;
 				this.bDragFinish = false;
 			}
@@ -252,21 +252,179 @@ CMain.prototype =
 		this.OverlapTileCount++;
 		var OverlapTileArray =[];
 		OverlapTileArray.push(Tile);
-		// if(1 < this.OverlapTileCount){
-		// 	this.bNoSwap = true;
-		// }
 		this.SwapedTile = OverlapTileArray[OverlapTileArray.length - 1];
 		this.bSwapFinish = true;
 		//this.bDragFinish = true;
-		for(var i = 0; i < OverlapTileArray.length; ++i){
-			console.log(OverlapTileArray);
+		// for(var i = 0; i < OverlapTileArray.length; ++i){
+		// 	console.log(OverlapTileArray);
+		//}
+	},
+	//08/07
+	MatchTile : function(){
+		if(this.bMatchStart){
+			if(this.bMatchTileCheck){
+				this.IndexChange();
+				var RightMatchCount = this.MatchTileCheck(100, 0);
+				var LeftMatchCount = this.MatchTileCheck(-100, 0);
+				var UpMatchCount = this.MatchTileCheck(0, 100);
+				var DownMatchCount = this.MatchTileCheck(0, -100);
+				this.bMatchTileCheck = false;
+			}
+			var Horizental = RightMatchCount + LeftMatchCount + 1;
+			var Vertical = UpMatchCount + DownMatchCount + 1;
 
+			if(Horizental >= 3)
+			{
+				if(!this.ArrayEmpty(this.HorizentalArray))
+				{
+					for(var i = 0; i < this.HorizentalArray.length; ++i){
+						this.TileArray[this.HorizentalArray[i].Id].kill();
+						this.TileArray[this.HorizentalArray[i].Id] = null;
+						this.HorizentalArray[i].kill();
+						this.HorizentalArray[i] = null;
+					}
+				}
+				else{
+					this.bMatchStart = false;
+				}
+				this.TileArray[this.SelectTile.Id].kill();
+				this.TileArray[this.SelectTile.Id] = null;
+				this.SelectTile = null;
+				this.SwapedTile = null;
+				var TempArray = [];
+				var TempArray2 = [];
+				this.HorizentalArray = TempArray;
+				this.VerticalArray = TempArray2;
+				this.bDragFinish = true;
+			}
+
+			if(Vertical >= 3)
+			{
+				if(!this.ArrayEmpty(this.VerticalArray))
+				{
+					for(var i = 0; i < this.VerticalArray.length; ++i){
+						this.TileArray[this.VerticalArray[i].Id].kill();
+						this.TileArray[this.VerticalArray[i].Id] = null;
+						this.VerticalArray[i].kill();
+						this.VerticalArray[i] = null;
+					}
+				}
+				else{
+					this.bMatchStart = false;
+				}
+				this.TileArray[this.SelectTile.Id].kill();
+				this.TileArray[this.SelectTile.Id] = null;
+				this.SelectTile = null;
+				this.SwapedTile = null;
+				var TempArray = [];
+				var TempArray2 = [];
+				this.HorizentalArray = TempArray;
+				this.VerticalArray = TempArray2;
+				this.bDragFinish = true;
+			}
+
+			if(Horizental <= 3 && Vertical <= 3)
+			{
+				this.ReChangeTween();
+				var TempArray = [];
+				var TempArray2 = [];
+				this.HorizentalArray = TempArray;
+				this.VerticalArray = TempArray2;
+				this.bMatchStart = false;
+				this.bMatchTileCheck = false;
+				this.bDragFinish = true;
+			}
+		}
+		this.DropTile()
+		//console.log(this.DropTile());
+		//console.log(this.TilePosArray);
+	},
+
+//08/08
+	DropTile : function(){
+		var nulltileX, nullTileY;
+		var NullTile;
+		var check = true;
+		var TileIndex;
+		var sprTile;
+		for(var i = 0; i <= 600; i += 100)
+		{
+			var DropRowCount = 0;
+			for(var j = 1060; j >= 460; j -= 100)
+			{
+					//TileIndex = this.getNullTile(i, j);
+				sprTile = this.getTile(i, j);
+				if(sprTile === null)
+				{
+					DropRowCount += 100;
+				}
+
+				else if(DropRowCount >= 100)
+				{
+					console.log('Yap');
+					// if(TileIndex !== undefined)
+					// {
+					// 	Tile.Id = TileIndex;
+					// 	this.TileArray[TileIndex] = Tile;
+					// 	this.TilePosArray[TileIndex] = Tile;
+					// }
+				}
+			}
 		}
 	},
 
-	// MatchTileCheck : function(){
-	//
-	// },
+	IndexChange : function(){
+		for(var i = 0; i < this.TileArray.length; ++i)
+		{
+			if(this.TileArray[i] === this.SelectTile)
+			{
+				var SelectIndex = i;
+			}
+			else if(this.TileArray[i] === this.SwapedTile)
+			{
+				var SwapedIndex = i;
+			}
+		}
+		var TempId = this.TileArray[SelectIndex].Id;
+		this.TileArray[SelectIndex].Id = this.TileArray[SwapedIndex].Id;
+		this.TileArray[SwapedIndex].Id = TempId;
+		var TempTile = this.TileArray[SelectIndex];
+		this.TileArray[SelectIndex] = this.TileArray[SwapedIndex];
+		this.TileArray[SwapedIndex] = TempTile;
+	},
+
+	MatchTileCheck : function(moveX, moveY){
+		if(this.bMatchStart){
+			if(moveX !== 0)
+			{
+				var CurX = this.SelectTile.x + moveX;
+				var CurY = this.SelectTile.y + moveY;
+				var MatchTileCount = 0;
+				while(CurX >= 0 && CurY >= 460 && CurX <= 600 && CurY <= 1060 && this.getTile(CurX, CurY).key === this.SelectTile.key)
+				{
+					var getTile = this.getTile(CurX, CurY);
+					CurX += moveX;
+					CurY += moveY;
+					MatchTileCount++;
+					this.HorizentalArray.push(getTile);
+				}
+			}
+			else{
+				var CurX = this.SelectTile.x + moveX;
+				var CurY = this.SelectTile.y + moveY;
+				var MatchTileCount = 0;
+				while(CurX >= 0 && CurY >= 460 && CurX <= 600 && CurY <= 1060 && this.getTile(CurX, CurY).key === this.SelectTile.key)
+				{
+					var getTile = this.getTile(CurX, CurY);
+					CurX += moveX;
+					CurY += moveY;
+					MatchTileCount++;
+					this.VerticalArray.push(getTile);
+				}
+			}
+		}
+		return MatchTileCount;
+	},
 
 	DuplicateCheck : function(Tile){
 		var KillTilePosx = 0;
@@ -285,11 +443,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 2].x;
 						KillTilePosy = this.TileArray[i + 2].y;
 						this.TileArray[i + 2].kill();
+						this.TilePosArray[i + 2].kill();
 						this.TileArray[i + 2] = null;
+						this.TilePosArray[i + 2] = null;
 						if(this.TileArray[i + 2] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_02');
+							Tile.Id = i + 2;
 							this.TileArray[i + 2] = Tile;
+							this.TilePosArray[i + 2] = Tile;
 						}
 					}
 				}
@@ -300,11 +462,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 2].x;
 						KillTilePosy = this.TileArray[i + 2].y;
 						this.TileArray[i + 2].kill();
+						this.TilePosArray[i + 2].kill();
 						this.TileArray[i + 2] = null;
+						this.TilePosArray[i + 2] = null;
 						if(this.TileArray[i + 2] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_03');
-							this.TileArray[i + 2] = Tile
+							Tile.Id = i + 2;
+							this.TileArray[i + 2] = Tile;
+							this.TilePosArray[i + 2] = Tile;
 						}
 					}
 				}
@@ -315,11 +481,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 2].x;
 						KillTilePosy = this.TileArray[i + 2].y;
 						this.TileArray[i + 2].kill();
+						this.TilePosArray[i + 2].kill();
 						this.TileArray[i + 2] = null;
+						this.TilePosArray[i + 2] = null;
 						if(this.TileArray[i + 2] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_04');
+							Tile.Id = i + 2;
 							this.TileArray[i + 2] = Tile;
+							this.TilePosArray[i + 2] = Tile;
 						}
 					}
 				}
@@ -330,11 +500,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 2].x;
 						KillTilePosy = this.TileArray[i + 2].y;
 						this.TileArray[i + 2].kill();
+						this.TilePosArray[i + 2].kill();
 						this.TileArray[i + 2] = null;
+						this.TilePosArray[i + 2] = null;
 						if(this.TileArray[i + 2] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_05');
+							Tile.Id = i + 2;
 							this.TileArray[i + 2] = Tile;
+							this.TilePosArray[i + 2] = Tile;
 						}
 					}
 				}
@@ -345,11 +519,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 2].x;
 						KillTilePosy = this.TileArray[i + 2].y;
 						this.TileArray[i + 2].kill();
+						this.TilePosArray[i + 2].kill();
 						this.TileArray[i + 2] = null;
+						this.TilePosArray[i + 2] = null;
 						if(this.TileArray[i + 2] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_01');
+							Tile.Id = i + 2;
 							this.TileArray[i + 2] = Tile;
+							this.TilePosArray[i + 2] = Tile;
 						}
 					}
 				}
@@ -364,11 +542,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 7].x;
 						KillTilePosy = this.TileArray[i + 7].y;
 						this.TileArray[i + 7].kill();
+						this.TilePosArray[i + 7].kill();
 						this.TileArray[i + 7] = null;
+						this.TilePosArray[i + 7] = null;
 						if(this.TileArray[i + 7] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_02');
+							Tile.Id = i + 7;
 							this.TileArray[i + 7] = Tile;
+							this.TilePosArray[i + 7] = Tile;
 						}
 					}
 				}
@@ -379,11 +561,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 7].x;
 						KillTilePosy = this.TileArray[i + 7].y;
 						this.TileArray[i + 7].kill();
+						this.TilePosArray[i + 7].kill();
 						this.TileArray[i + 7] = null;
+						this.TilePosArray[i + 7] = null;
 						if(this.TileArray[i + 7] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_03');
+							Tile.Id = i + 7;
 							this.TileArray[i + 7] = Tile;
+							this.TilePosArray[i + 7] = Tile;
 						}
 					}
 				}
@@ -394,11 +580,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 7].x;
 						KillTilePosy = this.TileArray[i + 7].y;
 						this.TileArray[i + 7].kill();
+						this.TilePosArray[i + 7].kill();
 						this.TileArray[i + 7] = null;
+						this.TilePosArray[i + 7] = null;
 						if(this.TileArray[i + 7] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_04');
+							Tile.Id = i + 7;
 							this.TileArray[i + 7] = Tile;
+							this.TilePosArray[i + 7] = Tile;
 						}
 					}
 				}
@@ -409,11 +599,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 7].x;
 						KillTilePosy = this.TileArray[i + 7].y;
 						this.TileArray[i + 7].kill();
+						this.TilePosArray[i + 7].kill();
 						this.TileArray[i + 7] = null;
+						this.TilePosArray[i + 7] = null;
 						if(this.TileArray[i + 7] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_05');
+							Tile.Id = i + 7;
 							this.TileArray[i + 7] = Tile;
+							this.TilePosArray[i + 7] = Tile;
 						}
 					}
 				}
@@ -424,11 +618,15 @@ CMain.prototype =
 						KillTilePosx = this.TileArray[i + 7].x;
 						KillTilePosy = this.TileArray[i + 7].y;
 						this.TileArray[i + 7].kill();
+						this.TilePosArray[i + 7].kill();
 						this.TileArray[i + 7] = null;
+						this.TilePosArray[i + 7] = null;
 						if(this.TileArray[i + 7] === null)
 						{
 							Tile = this.TileMakeFeature(Tile, KillTilePosx, KillTilePosy, 'block_01');
+							Tile.Id = i + 7;
 							this.TileArray[i + 7] = Tile;
+							this.TilePosArray[i + 7] = Tile;
 						}
 					}
 				}
@@ -455,19 +653,29 @@ CMain.prototype =
 		this.SwapedTileStartPos.y = this.SwapedTile.y;
 		if(this.CurDirection === Direction.UP || this.CurDirection === Direction.DOWN)
 		{
-			this.SelectTileTween = game.add.tween(this.SelectTile).to({y : this.SwapedTile.y}, TweenDuration, Phaser.Easing.Linear.None, true);
-			this.SwapedTileTween = game.add.tween(this.SwapedTile).to({y : this.SelectTileStartPos.y}, TweenDuration, Phaser.Easing.Linear.None, true);
-			this.SelectTileTween.onComplete.add(this.ReChangeTween, this);
+			this.SelectTileTween = game.add.tween(this.SelectTile).to({ y : this.SwapedTile.y }, TweenDuration, Phaser.Easing.Linear.None, true);
+			this.SwapedTileTween = game.add.tween(this.SwapedTile).to({ y : this.SelectTileStartPos.y }, TweenDuration, Phaser.Easing.Linear.None, true);
+			//this.SelectTileTween.onComplete.add(this.ReChangeTween, this);
+			//this.SelectTileTween.onComplete.add(this.MatchTile, this);
+			this.SwapedTileTween.onComplete.add(this.MatchTile, this);
 			this.SelectTileTween.start();
 			this.SwapedTileTween.start();
+			this.bMatchStart = true;
+			this.bMatchTileCheck = true;
+			//this.bMatchStart = true;
 		}
 		else
 		{
 			this.SelectTileTween = game.add.tween(this.SelectTile).to({ x : this.SwapedTile.x}, TweenDuration, Phaser.Easing.Linear.None, true);
 			this.SwapedTileTween = game.add.tween(this.SwapedTile).to({ x : this.SelectTileStartPos.x}, TweenDuration, Phaser.Easing.Linear.None, true);
-			this.SelectTileTween.onComplete.add(this.ReChangeTween, this);
+			//this.SelectTileTween.onComplete.add(this.ReChangeTween, this);
+			//this.SelectTileTween.onComplete.add(this.MatchTile, this);
+			this.SwapedTileTween.onComplete.add(this.MatchTile, this);
 			this.SelectTileTween.start();
 			this.SwapedTileTween.start();
+			this.bMatchStart = true;
+			this.bMatchTileCheck = true;
+			//this.bMatchStart = true;
 		}
 	},
 
@@ -482,6 +690,7 @@ CMain.prototype =
 			this.CurDirection = Direction.END;
 			this.SelectTile = null;
 			this.SwapedTile = null;
+			this.bMatch = false;
 		}
 		else{
 			if(this.bMatch === false){
@@ -493,11 +702,42 @@ CMain.prototype =
 			this.CurDirection = Direction.END;
 			this.SelectTile = null;
 			this.SwapedTile = null;
+			this.bMatch = false;
 		}
 	},
 
+	BeforeMatchTweenFinish : function(){
+		this.bMatchStart = true;
+		this.bMatchTileCheck = true;
+	},
+
+//Tile이 null이면 null인 인덱스 반환
 	getTile : function(posX, posY){
-		return this.Tile.iterate('Id', this.SelectTile.Id, Phaser.Group.RETURN_CHILD);
+		var getToTile;
+		for(var i = 0; i < this.TileArray.length; ++i){
+			if(this.TileArray[i] === null)
+			{
+				return null;
+			}
+			else if(this.TileArray[i].x === posX && this.TileArray[i].y === posY){
+				getToTile = this.TileArray[i];
+				return getToTile;
+			}
+		}
+	},
+
+	getNullTile : function(posX, posY){
+		var getToNullTileIndx;
+		for(var i = 0; i < this.TileArray.length; ++i){
+			if(this.TileArray[i] === null){
+				return i;
+			}
+		}
+	},
+
+	setTile : function(Tile, Posx, Posy, key, Id){
+		Tile = this.TileMakeFeature(Tile, Posx, Posy, key);
+		this.TileArray[Id].push(Tile);
 	},
 
 	onDown : function(sprite, pointer){
@@ -508,7 +748,21 @@ CMain.prototype =
 		console.log('OnOver : ' + Tile.Id);
 	},
 
+	ArrayEmpty : function(Array){
+		for(var i = 0; i < Array.length; ++i){
+			if(Array[i] !== null)
+				return false;
+		}
+		return true;
+	},
+
 	update : function(){
+		//console.log(this.DropTile());
+	//	console.log(this.TileArray[0].x, this.TileArray[0].y);
+
+			//this.bMatchStart = false;
+
+		//console.log('getTile : ' + this.getTile(600, 1060));
 		//console.log(this.getSelectTileStartPos());
 		// if(this.SwapedTile != null)
 		// 	console.log(this.SwapedTile.position);

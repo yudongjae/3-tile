@@ -29,5 +29,5 @@ var BoardInfo = {
 	BOARD_ROWS : 7
 };
 
-var TweenDuration = 300;
+var TweenDuration = 200;
 var MoveDistance = 40;
