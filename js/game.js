@@ -261,14 +261,22 @@ CMain.prototype =
 	},
 	//08/07
 	MatchTile : function(){
+		this.KillTile(this.SelectTile);
+		this.KillTile(this.SwapedTile);
+		//console.log(this.DropTile());
+		//console.log(this.TilePosArray);
+	},
+
+	KillTile : function(Tile){
 		if(this.bMatchStart){
 			if(this.bMatchTileCheck){
 				this.IndexChange();
-				var RightMatchCount = this.MatchTileCheck(100, 0);
-				var LeftMatchCount = this.MatchTileCheck(-100, 0);
-				var UpMatchCount = this.MatchTileCheck(0, 100);
-				var DownMatchCount = this.MatchTileCheck(0, -100);
-				this.bMatchTileCheck = false;
+				var RightMatchCount = this.MatchTileCheck(100, 0, Tile);
+				var LeftMatchCount = this.MatchTileCheck(-100, 0, Tile);
+				var UpMatchCount = this.MatchTileCheck(0, 100, Tile);
+				var DownMatchCount = this.MatchTileCheck(0, -100, Tile);
+				if(Tile === this.SwapedTile)
+					this.bMatchTileCheck = false;
 			}
 			var Horizental = RightMatchCount + LeftMatchCount + 1;
 			var Vertical = UpMatchCount + DownMatchCount + 1;
@@ -287,10 +295,11 @@ CMain.prototype =
 				else{
 					this.bMatchStart = false;
 				}
-				this.TileArray[this.SelectTile.Id].kill();
-				this.TileArray[this.SelectTile.Id] = null;
+				this.TileArray[Tile.Id].kill();
+				this.TileArray[Tile.Id] = null;
 				this.SelectTile = null;
 				this.SwapedTile = null;
+
 				var TempArray = [];
 				var TempArray2 = [];
 				this.HorizentalArray = TempArray;
@@ -312,17 +321,17 @@ CMain.prototype =
 				else{
 					this.bMatchStart = false;
 				}
-				this.TileArray[this.SelectTile.Id].kill();
+				this.TileArray[Tile.Id].kill();
 				this.TileArray[this.SelectTile.Id] = null;
 				this.SelectTile = null;
 				this.SwapedTile = null;
+
 				var TempArray = [];
 				var TempArray2 = [];
 				this.HorizentalArray = TempArray;
 				this.VerticalArray = TempArray2;
 				this.bDragFinish = true;
 			}
-
 			if(Horizental <= 3 && Vertical <= 3)
 			{
 				this.ReChangeTween();
@@ -334,10 +343,9 @@ CMain.prototype =
 				this.bMatchTileCheck = false;
 				this.bDragFinish = true;
 			}
+
 		}
-		this.DropTile()
-		//console.log(this.DropTile());
-		//console.log(this.TilePosArray);
+		this.DropTile();
 	},
 
 //08/08
@@ -393,14 +401,14 @@ CMain.prototype =
 		this.TileArray[SwapedIndex] = TempTile;
 	},
 
-	MatchTileCheck : function(moveX, moveY){
+	MatchTileCheck : function(moveX, moveY, Tile){
 		if(this.bMatchStart){
 			if(moveX !== 0)
 			{
-				var CurX = this.SelectTile.x + moveX;
-				var CurY = this.SelectTile.y + moveY;
+				var CurX = Tile.x + moveX;
+				var CurY = Tile.y + moveY;
 				var MatchTileCount = 0;
-				while(CurX >= 0 && CurY >= 460 && CurX <= 600 && CurY <= 1060 && this.getTile(CurX, CurY).key === this.SelectTile.key)
+				while(CurX >= 0 && CurY >= 460 && CurX <= 600 && CurY <= 1060 && this.getTile(CurX, CurY).key === Tile.key)
 				{
 					var getTile = this.getTile(CurX, CurY);
 					CurX += moveX;
@@ -410,10 +418,10 @@ CMain.prototype =
 				}
 			}
 			else{
-				var CurX = this.SelectTile.x + moveX;
-				var CurY = this.SelectTile.y + moveY;
+				var CurX = Tile.x + moveX;
+				var CurY = Tile.y + moveY;
 				var MatchTileCount = 0;
-				while(CurX >= 0 && CurY >= 460 && CurX <= 600 && CurY <= 1060 && this.getTile(CurX, CurY).key === this.SelectTile.key)
+				while(CurX >= 0 && CurY >= 460 && CurX <= 600 && CurY <= 1060 && this.getTile(CurX, CurY).key === Tile.key)
 				{
 					var getTile = this.getTile(CurX, CurY);
 					CurX += moveX;
@@ -715,13 +723,12 @@ CMain.prototype =
 	getTile : function(posX, posY){
 		var getToTile;
 		for(var i = 0; i < this.TileArray.length; ++i){
-			if(this.TileArray[i] === null)
+			if(this.TileArray[i] !== null)
 			{
-				return null;
-			}
-			else if(this.TileArray[i].x === posX && this.TileArray[i].y === posY){
-				getToTile = this.TileArray[i];
-				return getToTile;
+				if(this.TileArray[i].x === posX && this.TileArray[i].y === posY){
+					getToTile = this.TileArray[i];
+					return getToTile;
+				}
 			}
 		}
 	},
